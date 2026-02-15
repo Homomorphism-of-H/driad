@@ -1,32 +1,46 @@
 use std::{error::Error, time::Duration};
 
-use sdl3::{event::Event, keyboard::Keycode, pixels::Color, render::FPoint};
+use driad::Driad;
+use sdl3::{
+    event::Event,
+    keyboard::Keycode,
+    pixels::{Color, PixelFormat},
+    rect::Rect,
+    render::FRect,
+};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let sdl = sdl3::init()?;
+    let driad = Driad::new()?;
 
-    let video_subsytem = sdl.video()?;
+    let video_subsytem = driad.video()?;
 
     let window = video_subsytem
-        .window("Beep Borp", 800, 600)
+        .window("Driad", 800, 600)
         .position_centered()
         .build()?;
 
-    let mut canvas = window.into_canvas();
+    let mut canvas = window.clone().into_canvas();
 
     canvas.set_draw_color(Color::RGB(0, 255, 255));
     canvas.clear();
     canvas.present();
 
-    let mut event_pump = sdl.event_pump()?;
-    let mut i = 0;
+    let mut event_pump = driad.event_pump()?;
+    let texture_creator = canvas.texture_creator();
+
+    let mut texture = texture_creator.create_texture_static(PixelFormat::RGB24, 2, 2)?;
+
+    texture.update(
+        Rect::new(0, 0, 2, 2),
+        &[255, 155, 150, 0, 0, 0, 100, 100, 100, 150, 180, 250],
+        3,
+    )?;
 
     'running: loop {
-        i = (i + 1) % 255;
-        canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
-        canvas.clear();
         canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.draw_point(FPoint::new(100., 100.))?;
+        canvas.clear();
+        canvas.copy(&texture, None, Some(FRect::new(300., 300., 32., 32.)))?;
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
