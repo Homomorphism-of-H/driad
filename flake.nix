@@ -17,12 +17,16 @@
 
           runtimeDeps = with pkgs; [
             sdl3
+            lua5_4_compat
           ];
           buildDeps = with pkgs; [
             pkg-config
             rustPlatform.bindgenHook
+            lua5_4_compat
           ];
-          devDeps = with pkgs; [  ];
+          devDeps = with pkgs; [ 
+            # just
+          ];
 
           rustPackage = features:
             (pkgs.makeRustPlatform {

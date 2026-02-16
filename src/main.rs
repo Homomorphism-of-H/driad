@@ -1,6 +1,7 @@
 use std::{error::Error, time::Duration};
 
 use driad::Driad;
+use mlua::{Function, chunk};
 use sdl3::{
     event::Event,
     keyboard::Keycode,
@@ -9,12 +10,32 @@ use sdl3::{
     render::FRect,
 };
 
+fn blamo(a: i32, b: i32) -> Result<i32, mlua::Error> {
+    Ok(a + b)
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let driad = Driad::new()?;
 
-    let video_subsytem = driad.video()?;
+    let lua = mlua::Lua::new();
 
-    let window = video_subsytem
+    let func = lua
+        .load(chunk! {
+        local function alpha(a, b)
+            return a + b
+        end
+        })
+        .into_function()
+        .unwrap();
+
+    let out = func.call::<i32>((10i32, 5i32)).unwrap();
+
+    println!("{out}");
+
+    Function::wrap(blamo);
+
+    let window = driad
+        .video
         .window("Driad", 800, 600)
         .position_centered()
         .build()?;

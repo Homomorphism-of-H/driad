@@ -1,16 +1,18 @@
 use std::ops::{Deref, DerefMut};
 
-use sdl3::Sdl;
+use sdl3::{Sdl, VideoSubsystem};
 use thiserror::Error;
 
 pub struct Driad {
     pub sdl: Sdl,
+    pub video: VideoSubsystem,
 }
 
 impl Driad {
     pub fn new() -> Result<Self, DriadNewError> {
         let sdl = sdl3::init()?;
-        Ok(Self { sdl })
+        let video = sdl.video()?;
+        Ok(Self { sdl, video })
     }
 }
 
