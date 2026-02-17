@@ -28,13 +28,9 @@ impl Driad {
         Ok(Self { sdl, video, lua })
     }
 
+    #[inline]
     pub fn load_plugin(&self, path : impl AsRef<Path>) -> Result<Plugin, LoadPluginError> {
-        let metadata = Plugin::fetch_metadata(&path)?;
-        let functions = Plugin::load_lua_functions(&self.lua, &path)?;
-
-        println!("{metadata}");
-
-        Ok(Plugin::new_from_parts(metadata, functions))
+        Plugin::load_from_path(path, &self.lua)
     }
 }
 

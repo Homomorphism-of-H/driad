@@ -11,15 +11,27 @@ use crate::Version;
 
 pub struct Plugin {
     pub metadata : Metadata,
+    /// Lua table of Lua functions that the plugin uses
     functions :    Table,
 }
 
 impl Plugin {
-    pub fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
+    #[must_use]
+    #[inline(always)]
+    pub const fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
         Self {
             metadata,
             functions,
         }
+    }
+
+    pub fn load_from_path(path : impl AsRef<Path>, lua : &Lua) -> Result<Self, LoadPluginError> {
+        let metadata = Self::fetch_metadata(&path)?;
+        let functions = Self::load_lua_functions(lua, &path)?;
+        Ok(Self {
+            metadata,
+            functions,
+        })
     }
 
     pub fn fetch_metadata(path : impl AsRef<Path>) -> Result<Metadata, FetchMetadataError> {
