@@ -1,14 +1,12 @@
-use std::{error::Error, time::Duration};
+use std::error::Error;
+use std::time::Duration;
 
 use driad::Driad;
-use sdl3::{
-    event::Event,
-    keyboard::Keycode,
-    pixels::{Color, PixelFormat},
-    rect::Rect,
-    render::FRect,
-};
-
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::{Color, PixelFormat};
+use sdl3::rect::Rect;
+use sdl3::render::FRect;
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
@@ -51,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                _ => {}
+                _ => {},
             }
         }
 

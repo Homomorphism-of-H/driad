@@ -1,9 +1,7 @@
-use std::{
-    fmt::{self, Display},
-    fs::File,
-    io::{self, Read},
-    path::Path,
-};
+use std::fmt::{self, Display};
+use std::fs::File;
+use std::io::{self, Read};
+use std::path::Path;
 
 use mlua::{Lua, Table};
 use serde::Deserialize;
@@ -12,19 +10,19 @@ use thiserror::Error;
 use crate::Version;
 
 pub struct Plugin {
-    pub metadata: Metadata,
-    functions: Table,
+    pub metadata : Metadata,
+    functions :    Table,
 }
 
 impl Plugin {
-    pub fn new_from_parts(metadata: Metadata, functions: Table) -> Self {
+    pub fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
         Self {
             metadata,
             functions,
         }
     }
 
-    pub fn fetch_metadata(path: impl AsRef<Path>) -> Result<Metadata, FetchMetadataError> {
+    pub fn fetch_metadata(path : impl AsRef<Path>) -> Result<Metadata, FetchMetadataError> {
         let dir_reader = Path::read_dir(path.as_ref())?;
 
         let metadata = dir_reader
@@ -49,7 +47,7 @@ impl Plugin {
     }
 
     /// Warning, this function can execute arbitrary lua code, be warned.
-    pub fn load_lua_functions(lua: &Lua, path: impl AsRef<Path>) -> Result<Table, FetchLuaError> {
+    pub fn load_lua_functions(lua : &Lua, path : impl AsRef<Path>) -> Result<Table, FetchLuaError> {
         let dir_reader = Path::read_dir(path.as_ref())?;
 
         let functions = dir_reader
@@ -70,13 +68,13 @@ impl Plugin {
 
 #[derive(Debug, Deserialize)]
 pub struct Metadata {
-    pub name: String,
-    pub authors: Vec<String>,
-    pub version: Version,
+    pub name :    String,
+    pub authors : Vec<String>,
+    pub version : Version,
 }
 
 impl Display for Metadata {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         writeln!(f, "Name: {}\nAuthors:", self.name)?;
         for author in self.authors.clone() {
             writeln!(f, " - {author}")?;
@@ -90,8 +88,10 @@ impl Display for Metadata {
 pub enum FetchMetadataError {
     #[error("Plugin folder lacks a metadata.toml file")]
     MetadataNotFound,
+
     #[error(transparent)]
     TomlParseError(#[from] toml::de::Error),
+
     #[error(transparent)]
     IoError(#[from] io::Error),
 }
@@ -100,8 +100,10 @@ pub enum FetchMetadataError {
 pub enum FetchLuaError {
     #[error(transparent)]
     LuaError(#[from] mlua::Error),
+
     #[error(transparent)]
     IoError(#[from] io::Error),
+
     #[error("Plugin folder lackas a main.lua file")]
     LuaNotFound,
 }
@@ -110,8 +112,10 @@ pub enum FetchLuaError {
 pub enum LoadPluginError {
     #[error(transparent)]
     IoError(io::Error),
+
     #[error(transparent)]
     FetchLuaError(#[from] FetchLuaError),
+
     #[error(transparent)]
     FetchMetadataError(#[from] FetchMetadataError),
 }
