@@ -1,13 +1,19 @@
 [package]
 name = "driad"
 version = "0.1.0"
+authors = ["Fae"]
 edition = "2024"
 
 [dependencies]
+# Rendering
 sdl3 = { version = "0.17.3", features = [] }
 
+# Errors
 thiserror = { version = "2.0.18", features = [] }
 
+# Embedded Lua
 mlua = { version = "0.11.6", features = ["lua54", "macros"] }
+
+# Serialization
 serde = { version = "1.0.228", features = ["derive"] }
 toml = { version = "0.9.8", features = [] }
