@@ -2,17 +2,14 @@ use std::{
     fmt::{self, Display},
     fs::File,
     io::{self, Read},
-    num::ParseIntError,
     path::Path,
-    str::FromStr,
 };
 
 use mlua::{Lua, Table};
-use serde::{
-    Deserialize,
-    de::{self, Visitor},
-};
+use serde::Deserialize;
 use thiserror::Error;
+
+use crate::Version;
 
 pub struct Plugin {
     pub metadata: Metadata,
@@ -78,65 +75,6 @@ pub struct Metadata {
     pub version: Version,
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq)]
-pub struct Version {
-    major: u32,
-    minor: u32,
-    patch: u32,
-}
-
-struct VersionVisitor;
-
-impl<'de> Visitor<'de> for VersionVisitor {
-    type Value = Version;
-
-    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, r#"a string tuple of u32s like "1.3.104""#)
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Version::from_str(v).map_err(de::Error::custom)
-    }
-}
-
-impl<'de> Deserialize<'de> for Version {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_str(VersionVisitor)
-    }
-}
-
-impl FromStr for Version {
-    type Err = ParseVersionError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let splits: Vec<&str> = s.split('.').collect();
-
-        if splits.len() != 3 {
-            return Err(ParseVersionError::WrongLength);
-        }
-
-        let mut splits = splits.iter();
-
-        Ok(Self {
-            major: splits.next().unwrap().parse()?,
-            minor: splits.next().unwrap().parse()?,
-            patch: splits.next().unwrap().parse()?,
-        })
-    }
-}
-
-impl Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
-    }
-}
-
 impl Display for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         writeln!(f, "Name: {}\nAuthors:", self.name)?;
@@ -156,14 +94,6 @@ pub enum FetchMetadataError {
     TomlParseError(#[from] toml::de::Error),
     #[error(transparent)]
     IoError(#[from] io::Error),
-}
-
-#[derive(Debug, Error)]
-pub enum ParseVersionError {
-    #[error(transparent)]
-    ParseIntError(#[from] ParseIntError),
-    #[error("Version is not 3 long")]
-    WrongLength,
 }
 
 #[derive(Debug, Error)]
