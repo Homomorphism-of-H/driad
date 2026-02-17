@@ -1,9 +1,9 @@
-local function start()
+local function init()
     print("Hello From Inside a Lua Function!")
 end
 
 local plugin_funcs = {
-    init = start
+    init = init
 }
 
 print("Hello From Lua!")

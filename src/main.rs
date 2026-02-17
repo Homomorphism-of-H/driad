@@ -9,6 +9,8 @@ use sdl3::{
     render::FRect,
 };
 
+
+/// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
     let driad = Driad::new()?;
 
@@ -52,7 +54,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => {}
             }
         }
-        // The rest of the game loop goes here...
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
