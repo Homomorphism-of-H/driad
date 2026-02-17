@@ -1,30 +1,37 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    path::Path,
+};
 
+use mlua::Lua;
 use sdl3::{Sdl, VideoSubsystem};
 use thiserror::Error;
+
+use crate::plugin::{LoadPluginError, Plugin};
+
+pub mod plugin;
 
 pub struct Driad {
     pub sdl: Sdl,
     pub video: VideoSubsystem,
+    pub lua: Lua,
 }
 
 impl Driad {
     pub fn new() -> Result<Self, DriadNewError> {
         let sdl = sdl3::init()?;
         let video = sdl.video()?;
-        Ok(Self { sdl, video })
+        let lua = Lua::new();
+        Ok(Self { sdl, video, lua })
     }
-}
 
-#[derive(Debug, PartialEq, Eq, Error)]
-pub enum DriadNewError {
-    #[error(transparent)]
-    SDL3Error(sdl3::Error),
-}
+    pub fn load_plugin(&self, path: impl AsRef<Path>) -> Result<Plugin, LoadPluginError> {
+        let metadata = Plugin::fetch_metadata(&path)?;
+        let functions = Plugin::load_lua_functions(&self.lua, &path)?;
 
-impl From<sdl3::Error> for DriadNewError {
-    fn from(v: sdl3::Error) -> Self {
-        Self::SDL3Error(v)
+        println!("{metadata}");
+
+        Ok(Plugin::new_from_parts(metadata, functions))
     }
 }
 
@@ -40,4 +47,10 @@ impl Deref for Driad {
     fn deref(&self) -> &Self::Target {
         &self.sdl
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Error)]
+pub enum DriadNewError {
+    #[error(transparent)]
+    SDL3Error(#[from] sdl3::Error),
 }

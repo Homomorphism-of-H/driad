@@ -9,3 +9,5 @@ sdl3 = { version = "0.17.3", features = [] }
 thiserror = { version = "2.0.18", features = [] }
 
 mlua = { version = "0.11.6", features = ["lua54", "macros"] }
+serde = { version = "1.0.228", features = ["derive"] }
+toml = { version = "0.9.8", features = [] }
