@@ -3,15 +3,16 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
 
-use mlua::{Lua, Table};
+use mlua::{Function, Lua, Table};
 use serde::Deserialize;
 use thiserror::Error;
 
 use crate::Version;
 
+/// A lua plugin
 pub struct Plugin {
     pub metadata : Metadata,
-    /// Lua table of Lua functions that the plugin uses
+    /// Lua table of Lua functions that the plugin uses.
     functions :    Table,
 }
 
@@ -76,11 +77,19 @@ impl Plugin {
 
         lua.load(buf).eval::<Table>().map_err(From::from)
     }
+
+    /// Wrapper around the `init` lua function
+    pub fn call_init(&self) -> Result<(), mlua::Error> {
+        self.functions
+            .get::<Function>("init")
+            .and_then(|init| init.call(()))
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Metadata {
     pub name :    String,
+    // Could this be a `Box<[String]>`
     pub authors : Vec<String>,
     pub version : Version,
 }
@@ -88,9 +97,11 @@ pub struct Metadata {
 impl Display for Metadata {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         writeln!(f, "Name: {}\nAuthors:", self.name)?;
+
         for author in self.authors.clone() {
             writeln!(f, " - {author}")?;
         }
+
         write!(f, "Version {}", self.version)?;
         Ok(())
     }

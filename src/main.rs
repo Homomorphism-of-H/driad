@@ -12,7 +12,9 @@ use sdl3::render::FRect;
 fn main() -> Result<(), Box<dyn Error>> {
     let driad = Driad::new()?;
 
-    driad.load_plugin("plugins/test")?;
+    let plugin = driad.load_plugin("plugins/test")?;
+
+    plugin.call_init()?;
 
     let window = driad
         .video
@@ -29,21 +31,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut event_pump = driad.event_pump()?;
     let texture_creator = canvas.texture_creator();
 
-    let mut texture = texture_creator.create_texture_static(PixelFormat::RGB24, 2, 2)?;
+    let mut font = texture_creator.create_texture_static(PixelFormat::RGB24, 2, 2)?;
 
-    texture.update(
+    font.update(
         Rect::new(0, 0, 2, 2),
-        &[255, 0, 0, 
-        0, 255, 0, 
-        0, 0, 255, 
-        255, 255, 255],
+        &[255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255],
         6,
     )?;
 
     'running: loop {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
-        canvas.copy(&texture, None, Some(FRect::new(300., 300., 32., 32.)))?;
+        canvas.copy(&font, None, Some(FRect::new(300., 300., 32., 32.)))?;
 
         for event in event_pump.poll_iter() {
             match event {
