@@ -2,6 +2,7 @@ use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
+use std::sync::Arc;
 
 use mlua::{Function, Lua, Table};
 use serde::Deserialize;
@@ -12,23 +13,37 @@ use crate::Version;
 /// A lua plugin
 pub struct Plugin {
     pub metadata : Metadata,
-    /// Lua table of Lua functions that the plugin uses.
-    functions :    Table,
+
+    functions : Arc<dyn PluginApi<Err = mlua::Error>>,
+}
+
+pub trait PluginApi {
+    type Err;
+
+    fn init(&self) -> Result<bool, Self::Err>;
+}
+
+impl PluginApi for Table {
+    type Err = mlua::Error;
+
+    fn init(&self) -> Result<bool, Self::Err> {
+        self.get::<Function>("init").and_then(|init| init.call(()))
+    }
 }
 
 impl Plugin {
     #[must_use]
     #[inline(always)]
-    pub const fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
+    pub fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
         Self {
             metadata,
-            functions,
+            functions : Arc::new(functions),
         }
     }
 
     pub fn load_from_path(path : impl AsRef<Path>, lua : &Lua) -> Result<Self, LoadPluginError> {
         let metadata = Self::fetch_metadata(&path)?;
-        let functions = Self::load_lua_functions(lua, &path)?;
+        let functions = Arc::new(Self::load_lua_functions(lua, &path)?);
         Ok(Self {
             metadata,
             functions,
@@ -79,10 +94,8 @@ impl Plugin {
     }
 
     /// Wrapper around the `init` lua function
-    pub fn call_init(&self) -> Result<(), mlua::Error> {
-        self.functions
-            .get::<Function>("init")
-            .and_then(|init| init.call(()))
+    pub fn call_init(&self) -> Result<bool, mlua::Error> {
+        self.functions.init()
     }
 }
 
