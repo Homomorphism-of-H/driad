@@ -11,11 +11,11 @@ use sdl3::render::ScaleMode;
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
-    let driad = Driad::new()?;
+    let mut driad = Driad::new()?;
 
-    let plugin = driad.load_plugin("plugins/test")?;
+    driad.load_plugin("plugins/test")?;
 
-    plugin.call_init()?;
+    driad.init_plugins()?;
 
     let window = driad
         .video

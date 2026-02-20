@@ -12,12 +12,16 @@ use thiserror::Error;
 
 use crate::plugin::{LoadPluginError, Plugin};
 
+pub mod font;
 pub mod plugin;
 
 pub struct Driad {
     pub sdl :   Sdl,
     pub video : VideoSubsystem,
     pub lua :   Lua,
+
+    plugins_initialized : bool,
+    pub plugins :         Vec<Plugin>,
 }
 
 impl Driad {
@@ -25,12 +29,39 @@ impl Driad {
         let sdl = sdl3::init()?;
         let video = sdl.video()?;
         let lua = Lua::new();
-        Ok(Self { sdl, video, lua })
+        Ok(Self {
+            sdl,
+            video,
+            lua,
+            plugins_initialized : false,
+            plugins : Vec::new(),
+        })
     }
 
     #[inline]
-    pub fn load_plugin(&self, path : impl AsRef<Path>) -> Result<Plugin, LoadPluginError> {
-        Plugin::load_from_path(path, &self.lua)
+    /// Attaches a plugin to the Driad runtime without calling initializer
+    /// functions yet.
+    pub fn load_plugin(&mut self, path : impl AsRef<Path>) -> Result<bool, LoadPluginError> {
+        if !self.plugins_initialized {
+            self.plugins.push(Plugin::load_from_path(path, &self.lua)?);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub fn init_plugins(&mut self) -> Result<bool, mlua::Error> {
+        if !self.plugins_initialized {
+            for plugin in &self.plugins {
+                plugin.call_init()?;
+            }
+
+            self.plugins_initialized = true;
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 
