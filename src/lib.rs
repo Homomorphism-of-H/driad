@@ -13,6 +13,7 @@ use thiserror::Error;
 use crate::plugin::{LoadPluginError, Plugin};
 
 pub mod font;
+pub mod char;
 pub mod plugin;
 
 pub struct Driad {
