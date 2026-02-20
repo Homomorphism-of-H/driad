@@ -192,5 +192,5 @@ pub enum Char437 {
     LightShade,
     MediumShade,
     DarkShade,
-    LightVertical
+    // TODO
 }

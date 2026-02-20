@@ -1,6 +1,5 @@
 local function init()
     print("Hello From Inside a Lua Function!")
-    return true
 end
 
 local plugin = {

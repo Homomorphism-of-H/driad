@@ -54,7 +54,9 @@ impl Driad {
     pub fn init_plugins(&mut self) -> Result<bool, mlua::Error> {
         if !self.plugins_initialized {
             for plugin in &self.plugins {
-                plugin.call_init()?;
+                if let Some(res) = plugin.call_init() {
+                    res?
+                }
             }
 
             self.plugins_initialized = true;

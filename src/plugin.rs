@@ -20,7 +20,7 @@ pub struct Plugin {
 pub trait PluginApi {
     type Err;
 
-    fn init(&self) -> Result<bool, Self::Err>;
+    fn init(&self) -> Option<Result<(), Self::Err>>;
 }
 
 pub struct LuaPluginApi {
@@ -36,10 +36,11 @@ impl LuaPluginApi {
 impl PluginApi for LuaPluginApi {
     type Err = mlua::Error;
 
-    fn init(&self) -> Result<bool, Self::Err> {
+    fn init(&self) -> Option<Result<(), Self::Err>> {
         self.table
             .get::<Function>("init")
-            .and_then(|init| init.call(()))
+            .ok()
+            .map(|init| init.call(()))
     }
 }
 
@@ -106,7 +107,7 @@ impl Plugin {
     }
 
     /// Wrapper around the `init` lua function
-    pub fn call_init(&self) -> Result<bool, mlua::Error> {
+    pub fn call_init(&self) -> Option<Result<(), mlua::Error>> {
         self.api.init()
     }
 }
