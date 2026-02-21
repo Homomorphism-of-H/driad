@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::path::Path;
 
 use image::{EncodableLayout, GenericImage, GenericImageView, ImageError, Rgba};
@@ -17,6 +18,14 @@ pub struct LookupTable {
     /// A table of values stored in icon name and offset pairs. Note: The
     /// offsets are tile sized, not pixel sized.
     pub data : HashMap<String, (u32, u32)>,
+}
+
+impl Deref for LookupTable {
+    type Target = HashMap<String, (u32, u32)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
 }
 
 pub struct Font<'tex> {
@@ -95,21 +104,36 @@ impl<'tex> Font<'tex> {
             FontKey::Char(char437) => {
                 Some((
                     &self.font_atlas,
-                    Rect::new(
-                        char437.offset().0 as i32 * self.glyph_width as i32,
-                        char437.offset().1 as i32 * self.glyph_height as i32,
-                        self.glyph_width,
-                        self.glyph_height,
-                    ),
+                    self.try_offset_to_local(char437.offset())?,
                 ))
             },
             FontKey::Icon(ext, key) => {
-                Some((
-                    &self.extensions.get(&ext)?.1,
-                    Rect::new(0, 0, self.glyph_width, self.glyph_height),
-                ))
+                let (lookup, texture) = self.extensions.get(&ext)?;
+                let offset = self.try_offset_to_local(*lookup.get(&key)?)?;
+                Some((texture, offset))
             },
         }
+    }
+
+    pub fn offset_to_local<T1 : Into<i32>, T2 : Into<i32>>(&self, offset : (T1, T2)) -> Rect {
+        Rect::new(
+            offset.0.into() * self.glyph_width as i32,
+            offset.1.into() * self.glyph_height as i32,
+            self.glyph_width,
+            self.glyph_height,
+        )
+    }
+
+    pub fn try_offset_to_local<T1 : TryInto<i32>, T2 : TryInto<i32>>(
+        &self,
+        offset : (T1, T2),
+    ) -> Option<Rect> {
+        Some(Rect::new(
+            offset.0.try_into().ok()? * self.glyph_width as i32,
+            offset.1.try_into().ok()? * self.glyph_height as i32,
+            self.glyph_width,
+            self.glyph_height,
+        ))
     }
 }
 
