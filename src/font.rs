@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use image::{EncodableLayout, GenericImageView, ImageError};
+use image::{EncodableLayout, GenericImage, GenericImageView, ImageError, Rgba};
 use sdl3::pixels::PixelFormat;
 use sdl3::rect::Rect;
 use sdl3::render::{
@@ -33,10 +33,19 @@ impl<'tex> Font<'tex> {
     pub fn new<T>(
         texture_creator : &'tex TextureCreator<T>,
         path : impl AsRef<Path>,
+        bg : impl Into<Option<Rgba<u8>>>,
     ) -> Result<Self, FontCreationError> {
-        let im = image::open(path)?;
+        let mut im = image::open(path)?;
 
         let (w, h) = im.dimensions();
+
+        if let Some(bg) = bg.into() {
+            for (x, y, p) in im.clone().pixels() {
+                if p == bg {
+                    im.put_pixel(x, y, Rgba::from([0, 0, 0, 255]));
+                }
+            }
+        }
 
         if !(w % 16 == 0 && h % 16 == 0) {
             return Err(FontCreationError::BadlySized);
@@ -52,19 +61,73 @@ impl<'tex> Font<'tex> {
         font_atlas.set_scale_mode(ScaleMode::Nearest);
 
         Ok(Self {
-            glyph_height : w,
-            glyph_width : h,
+            glyph_height : w / 16,
+            glyph_width : h / 16,
             font_atlas,
             extensions : HashMap::new(),
         })
     }
 
-    pub fn put<T : RenderTarget>(&self, canvas : &mut Canvas<T>, key : impl Into<FontKey>) {}
+    pub fn put<T : RenderTarget>(
+        &self,
+        canvas : &mut Canvas<T>,
+        key : impl Into<FontKey>,
+        pos : (i32, i32),
+    ) -> Result<(), sdl3::Error> {
+        if let Some((texture, src)) = self.lookup_glyph(key) {
+            canvas.copy(
+                texture,
+                src,
+                Rect::new(
+                    pos.0 * self.glyph_width as i32,
+                    pos.1 * self.glyph_height as i32,
+                    self.glyph_width,
+                    self.glyph_height,
+                ),
+            )
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn lookup_glyph(&self, key : impl Into<FontKey>) -> Option<(&Texture<'tex>, Rect)> {
+        match key.into() {
+            FontKey::Char(char437) => {
+                Some((
+                    &self.font_atlas,
+                    Rect::new(
+                        char437.offset().0 as i32 * self.glyph_width as i32,
+                        char437.offset().1 as i32 * self.glyph_height as i32,
+                        self.glyph_width,
+                        self.glyph_height,
+                    ),
+                ))
+            },
+            FontKey::Icon(ext, key) => {
+                Some((
+                    &self.extensions.get(&ext)?.1,
+                    Rect::new(0, 0, self.glyph_width, self.glyph_height),
+                ))
+            },
+        }
+    }
 }
 
 pub enum FontKey {
     Char(Char437),
     Icon(String, String),
+}
+
+impl From<Char437> for FontKey {
+    fn from(v : Char437) -> Self {
+        Self::Char(v)
+    }
+}
+
+impl From<char> for FontKey {
+    fn from(value : char) -> Self {
+        Char437::try_from(value).unwrap().into()
+    }
 }
 
 #[derive(Debug, Error)]

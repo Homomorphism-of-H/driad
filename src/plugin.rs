@@ -20,7 +20,9 @@ pub struct Plugin {
 pub trait PluginApi {
     type Err;
 
-    fn init(&self) -> Option<Result<(), Self::Err>>;
+    fn init(&self) -> Option<Result<(), Self::Err>> {
+        None
+    }
 }
 
 pub struct LuaPluginApi {

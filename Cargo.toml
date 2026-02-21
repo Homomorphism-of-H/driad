@@ -18,3 +18,5 @@ mlua = { version = "0.11.6", features = ["lua54", "macros", "send"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = { version = "0.9.8", features = [] }
 image = { version = "0.25.9", features = [] }
+
+count-macro = { version = "0.2.3" }
