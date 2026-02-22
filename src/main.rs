@@ -37,12 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
 
-        font.put(&mut canvas, 'H', (2, 2))?;
-        font.put(&mut canvas, 'e', (3, 2))?;
-        font.put(&mut canvas, 'l', (4, 2))?;
-        font.put(&mut canvas, 'l', (5, 2))?;
-        font.put(&mut canvas, 'o', (6, 2))?;
-
+        font.put_str(&mut canvas, "Hello World!", (2, 2))?;
 
         for event in event_pump.poll_iter() {
             match event {

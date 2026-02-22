@@ -1,3 +1,6 @@
+use std::fmt;
+use std::ops::{Add, AddAssign, Sub, SubAssign};
+
 use image::{Rgb, Rgba};
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +19,48 @@ pub struct Palete {
     pub accent2 : Option<Color>,
     pub accent3 : Option<Color>,
     pub accent4 : Option<Color>,
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "(r: {}, g: {}, b: {})", self.r, self.g, self.b)
+    }
+}
+
+impl Add for Color {
+    type Output = Self;
+
+    fn add(self, rhs : Self) -> Self::Output {
+        Self {
+            r : self.r + rhs.r,
+            g : self.g + rhs.g,
+            b : self.b + rhs.b,
+        }
+    }
+}
+
+impl AddAssign for Color {
+    fn add_assign(&mut self, rhs : Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl Sub for Color {
+    type Output = Self;
+
+    fn sub(self, rhs : Self) -> Self::Output {
+        Self {
+            r : self.r - rhs.r,
+            g : self.g - rhs.g,
+            b : self.b - rhs.b,
+        }
+    }
+}
+
+impl SubAssign for Color {
+    fn sub_assign(&mut self, rhs : Self) {
+        *self = *self - rhs;
+    }
 }
 
 impl<R : Into<u8>, G : Into<u8>, B : Into<u8>> From<(R, G, B)> for Color {

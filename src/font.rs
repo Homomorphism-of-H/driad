@@ -99,6 +99,17 @@ impl<'tex> Font<'tex> {
         }
     }
 
+    pub fn put_str<T : RenderTarget>(
+        &self,
+        canvas : &mut Canvas<T>,
+        text : &str,
+        pos : (i32, i32),
+    ) -> Result<(), sdl3::Error> {
+        text.chars()
+            .enumerate()
+            .try_for_each(|(idx, c)| self.put(canvas, c, (pos.0 + idx as i32, pos.1)))
+    }
+
     pub fn lookup_glyph(&self, key : impl Into<FontKey>) -> Option<(&Texture<'tex>, Rect)> {
         match key.into() {
             FontKey::Char(char437) => {
