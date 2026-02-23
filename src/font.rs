@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::char::Char437;
+use crate::color::Color;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LookupTable {
@@ -28,21 +29,21 @@ impl Deref for LookupTable {
     }
 }
 
-pub struct Font<'tex> {
+pub struct Font {
     pub glyph_height : u32,
     pub glyph_width :  u32,
 
     /// A font atlas in codepage 437 format.
-    pub font_atlas : Texture<'tex>,
+    pub font_atlas : Texture,
 
-    pub extensions : HashMap<String, (LookupTable, Texture<'tex>)>,
+    pub extensions : HashMap<String, (LookupTable, Texture)>,
 }
 
-impl<'tex> Font<'tex> {
+impl Font {
     pub fn new<T>(
-        texture_creator : &'tex TextureCreator<T>,
+        texture_creator : &TextureCreator<T>,
         path : impl AsRef<Path>,
-        bg : impl Into<Option<Rgba<u8>>>,
+        bg : impl Into<Option<Color>>,
     ) -> Result<Self, FontCreationError> {
         let mut im = image::open(path)?;
 
@@ -50,7 +51,7 @@ impl<'tex> Font<'tex> {
 
         if let Some(bg) = bg.into() {
             for (x, y, p) in im.clone().pixels() {
-                if p == bg {
+                if p == bg.into() {
                     im.put_pixel(x, y, Rgba::from([0, 0, 0, 255]));
                 }
             }
@@ -60,7 +61,7 @@ impl<'tex> Font<'tex> {
             return Err(FontCreationError::BadlySized);
         }
 
-        let mut font_atlas : Texture<'tex> =
+        let mut font_atlas : Texture =
             texture_creator.create_texture_static(PixelFormat::RGB24, w, h)?;
         font_atlas.update(
             Rect::new(0, 0, w, h),
@@ -110,7 +111,7 @@ impl<'tex> Font<'tex> {
             .try_for_each(|(idx, c)| self.put(canvas, c, (pos.0 + idx as i32, pos.1)))
     }
 
-    pub fn lookup_glyph(&self, key : impl Into<FontKey>) -> Option<(&Texture<'tex>, Rect)> {
+    pub fn lookup_glyph(&self, key : impl Into<FontKey>) -> Option<(&Texture, Rect)> {
         match key.into() {
             FontKey::Char(char437) => {
                 Some((

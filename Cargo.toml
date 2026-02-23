@@ -6,7 +6,7 @@ edition = "2024"
 
 [dependencies]
 # Rendering
-sdl3 = { version = "0.17.3", features = [] }
+sdl3 = { version = "0.17.3", features = ["unsafe_textures"] }
 
 # Errors
 thiserror = { version = "2.0.18", features = [] }
