@@ -1,12 +1,12 @@
-use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use mlua::Lua;
-use sdl3::video::WindowBuildError;
-use sdl3::{IntegerOrSdlError, Sdl, VideoSubsystem};
+use sdl3::render::Canvas;
+use sdl3::video::{Window, WindowBuildError};
+use sdl3::{EventPump, IntegerOrSdlError, Sdl, VideoSubsystem};
 use thiserror::Error;
 
-use crate::font::FontCreationError;
+use crate::font::{Font, FontCreationError};
 use crate::plugin::{LoadPluginError, Plugin};
 
 pub mod char;
@@ -15,14 +15,20 @@ pub mod font;
 pub mod plugin;
 
 pub struct Driad {
-    pub sdl :   Sdl,
-    pub video : VideoSubsystem,
-    pub lua :   Lua,
+    pub sdl :    Sdl,
+    pub video :  VideoSubsystem,
+    pub window : Window,
+    pub canvas : Canvas<Window>,
+    pub font :   Font,
 
-    plugins_initialized : bool,
-    pub plugins :         Vec<Plugin>,
+    pub event_pump : EventPump,
+
+    pub plugins_initialized : bool,
+    pub lua :                 Lua,
+    pub plugins :             Vec<Plugin>,
 }
 
+// Todo, rework this to be a window Builder
 #[derive(Debug)]
 pub struct WindowProperties {
     pub width :      u32,
@@ -36,8 +42,8 @@ pub struct WindowProperties {
 impl Default for WindowProperties {
     fn default() -> Self {
         Self {
-            width :      400,
-            height :     300,
+            width :      80,
+            height :     60,
             name :       "Driad Window",
             centered :   true,
             borderless : false,
@@ -47,16 +53,66 @@ impl Default for WindowProperties {
 }
 
 impl Driad {
-    pub fn new() -> Result<Self, DriadNewError> {
+    pub fn new<T : AsRef<Path>>(
+        window_properties : WindowProperties,
+        font_path : impl AsRef<Path>,
+        plugin_paths : Vec<T>,
+    ) -> Result<Self, DriadNewError> {
         let sdl = sdl3::init()?;
+
         let video = sdl.video()?;
+        let mut window = video.window(
+            window_properties.name,
+            window_properties.width,
+            window_properties.height,
+        );
+        if window_properties.borderless {
+            window.borderless();
+        }
+        if window_properties.centered {
+            window.position_centered();
+        }
+        if window_properties.fullscreen {
+            window.fullscreen();
+        }
+
+        let mut window = window.build()?;
+
+        let canvas = window.clone().into_canvas();
+
+        let texture_creator = canvas.texture_creator();
+        // Hardcoded until Color is better integrated into fonts
+        let font = Font::new(&texture_creator, font_path, Some([255, 0, 255].into()))?;
+
+        window.set_size(window_properties.width * font.glyph_width, window_properties.height * font.glyph_height)?;
+
+        let event_pump = sdl.event_pump()?;
+
         let lua = Lua::new();
+
+        let plugins = plugin_paths
+            .iter()
+            .filter_map(|plugin_path| {
+                match Plugin::load_from_path(plugin_path, &lua) {
+                    Ok(ok) => Some(ok),
+                    Err(err) => {
+                        eprintln!("{err}");
+                        None
+                    },
+                }
+            })
+            .collect();
+
         Ok(Self {
             sdl,
             video,
+            window,
+            canvas,
+            font,
+            event_pump,
             lua,
+            plugins,
             plugins_initialized : false,
-            plugins : Vec::new(),
         })
     }
 
@@ -87,18 +143,8 @@ impl Driad {
             Ok(false)
         }
     }
-}
 
-impl DerefMut for Driad {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.sdl
-    }
-}
-
-impl Deref for Driad {
-    type Target = Sdl;
-
-    fn deref(&self) -> &Self::Target {
+    pub fn sdl(&self) -> &Sdl {
         &self.sdl
     }
 }
@@ -113,6 +159,6 @@ pub enum DriadNewError {
     IntegerOrSdlError(#[from] IntegerOrSdlError),
     #[error(transparent)]
     FontCreationError(#[from] FontCreationError),
+    #[error(transparent)]
+    LoadPluginError(#[from] LoadPluginError),
 }
-
-pub mod tileset {}

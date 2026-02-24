@@ -1,54 +1,37 @@
 use std::error::Error;
 use std::time::Duration;
 
-use driad::Driad;
-use driad::font::Font;
+use driad::{Driad, WindowProperties};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut driad = Driad::new()?;
-
-    driad.load_plugin("plugins/test")?;
-    driad.load_plugin("plugins/other")?;
+    let mut driad = Driad::new(
+        WindowProperties::default(),
+        "assets/Alloy_curses_12x12.png",
+        vec!["plugins/test", "plugins/other"],
+    )?;
 
     driad.init_plugins()?;
 
-    let window = driad
-        .video
-        .window("Driad", 800, 600)
-        .position_centered()
-        .build()?;
-
-    let mut canvas = window.clone().into_canvas();
-
-    canvas.set_draw_color(Color::RGB(0, 255, 255));
-    canvas.clear();
-    canvas.present();
-
-    let mut event_pump = driad.event_pump()?;
-    let texture_creator = canvas.texture_creator();
-
-    let font = Font::new(
-        &texture_creator,
-        "assets/Alloy_curses_12x12.png",
-        Some([255, 0, 255].into()),
-    )?;
+    driad.canvas.set_draw_color(Color::RGB(0, 255, 255));
+    driad.canvas.clear();
+    driad.canvas.present();
 
     let mut pos_x = 12;
     let mut pos_y = 12;
 
     'running: loop {
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
+        driad.canvas.set_draw_color(Color::RGB(0, 0, 0));
+        driad.canvas.clear();
 
-        font.put_str(&mut canvas, "Hello World!", (2, 2))?;
+        driad.font.put_str(&mut driad.canvas, "Hello World!", (2, 2))?;
 
-        font.put(&mut canvas, '@', (pos_x, pos_y))?;
+        driad.font.put(&mut driad.canvas, '@', (pos_x, pos_y))?;
 
-        for event in event_pump.poll_iter() {
+        for event in driad.event_pump.poll_iter() {
             match event {
                 Event::KeyDown {
                     keycode: Some(Keycode::Up),
@@ -74,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } => {
                     pos_x -= 1;
                 },
-                
+
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
@@ -84,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        canvas.present();
+        driad.canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
