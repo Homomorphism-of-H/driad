@@ -8,56 +8,58 @@
     nixpkgs.url = "nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, fenix, flake-utils, nixpkgs }:
-    flake-utils.lib.eachDefaultSystem (system: 
-      let
-          toolchain = fenix.packages.${system}.minimal.toolchain;
-          pkgs = nixpkgs.legacyPackages.${system};
-          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+  outputs = {
+    self,
+    fenix,
+    flake-utils,
+    nixpkgs,
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        toolchain = fenix.packages.${system}.minimal.toolchain;
+        pkgs = nixpkgs.legacyPackages.${system};
+        cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
 
-          runtimeDeps = with pkgs; [
-            sdl3
-            lua5_4_compat
-          ];
-          buildDeps = with pkgs; [
-            pkg-config
-            rustPlatform.bindgenHook
-            lua5_4_compat
-          ];
-          devDeps = with pkgs; [ 
-            # just
-          ];
+        runtimeDeps = with pkgs; [
+          sdl3
+          lua5_4_compat
+        ];
+        buildDeps = with pkgs; [
+          pkg-config
+          rustPlatform.bindgenHook
+          lua5_4_compat
+        ];
+        devDeps = with pkgs; [
+          # just
+        ];
 
-          rustPackage = features:
-            (pkgs.makeRustPlatform {
-              cargo = toolchain;
-              rustc = toolchain;
-            }).buildRustPackage {
-              pname = cargoToml.package.name;
-              version = cargoToml.workspace.package.version;
+        rustPackage = features:
+          (pkgs.makeRustPlatform {
+            cargo = toolchain;
+            rustc = toolchain;
+          }).buildRustPackage {
+            pname = cargoToml.package.name;
+            version = cargoToml.workspace.package.version;
 
-              src = ./.;
-              cargoLock.lockFile = ./Cargo.lock;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
 
-              buildFeatures = features;
-              buildInputs = runtimeDeps;
-              nativeBuildInputs = buildDeps;
+            buildFeatures = features;
+            buildInputs = runtimeDeps;
+            nativeBuildInputs = buildDeps;
+          };
 
-            };
-            
-          mkDevShell =
-            pkgs.mkShell {
-              shellHook = ''
-                export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
-              '';
-              buildInputs = runtimeDeps;
-              nativeBuildInputs = buildDeps ++ devDeps ++ [fenix.packages.${system}.default.toolchain];
-              LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath runtimeDeps}";
-            };
-
+        mkDevShell = pkgs.mkShell {
+          shellHook = ''
+            export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
+          '';
+          buildInputs = runtimeDeps;
+          nativeBuildInputs = buildDeps ++ devDeps ++ [fenix.packages.${system}.default.toolchain];
+          LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath runtimeDeps}";
+        };
       in {
-        packages.default = (rustPackage "");
-        devShells.default = (mkDevShell);
+        packages.default = rustPackage "";
+        devShells.default = mkDevShell;
       }
-  );
+    );
 }
