@@ -11,14 +11,55 @@ pub struct Color {
     pub b : u8,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Palete {
-    pub fg :      Color,
-    pub bg :      Color,
-    pub accent1 : Option<Color>,
-    pub accent2 : Option<Color>,
-    pub accent3 : Option<Color>,
-    pub accent4 : Option<Color>,
+impl Color {
+    pub fn new(r : u8, g : u8, b : u8) -> Self {
+        Self { r, g, b }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Palette {
+    pub fg :         Color,
+    pub fg_accent1 : Option<Color>,
+    pub fg_accent2 : Option<Color>,
+
+    pub bg :         Color,
+    pub bg_accent1 : Option<Color>,
+    pub bg_accent2 : Option<Color>,
+}
+
+impl Default for Palette {
+    fn default() -> Self {
+        Self {
+            fg :         Color {
+                r : 255,
+                g : 255,
+                b : 255,
+            },
+            bg :         Color {
+                r : 0,
+                g : 0,
+                b : 0,
+            },
+            fg_accent1 : None,
+            fg_accent2 : None,
+            bg_accent1 : None,
+            bg_accent2 : None,
+        }
+    }
+}
+
+impl Palette {
+    pub fn simple(fg : Color, bg : Color) -> Self {
+        Self {
+            fg,
+            bg,
+            fg_accent1 : None,
+            fg_accent2 : None,
+            bg_accent1 : None,
+            bg_accent2 : None,
+        }
+    }
 }
 
 impl fmt::Display for Color {

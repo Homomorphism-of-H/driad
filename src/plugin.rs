@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::{self, Read};
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use mlua::{Function, Lua, Table};
@@ -95,21 +96,43 @@ pub struct Plugin {
     api : LuaPluginApi,
 }
 
+impl DerefMut for Plugin {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.api
+    }
+}
+
+impl Deref for Plugin {
+    type Target = LuaPluginApi;
+
+    fn deref(&self) -> &Self::Target {
+        &self.api
+    }
+}
+
 pub trait PluginApi {
     type Err;
 
     fn init(&self) -> Option<Result<(), Self::Err>> {
         None
     }
+
+    fn draw_pass(&self) -> Option<Result<DrawCommand, Self::Err>> {
+        None
+    }
 }
 
 pub struct LuaPluginApi {
-    table : Table,
+    init :      Option<Function>,
+    draw_pass : Option<Function>,
 }
 
 impl LuaPluginApi {
     pub fn new(table : Table) -> Self {
-        Self { table }
+        Self {
+            init :      table.get("init").ok(),
+            draw_pass : table.get("draw_pass").ok(),
+        }
     }
 }
 
@@ -117,11 +140,29 @@ impl PluginApi for LuaPluginApi {
     type Err = mlua::Error;
 
     fn init(&self) -> Option<Result<(), Self::Err>> {
-        self.table
-            .get::<Function>("init")
-            .ok()
-            .map(|init| init.call(()))
+        self.init.as_ref().map(|init| init.call(()))
     }
+
+    fn draw_pass(&self) -> Option<Result<DrawCommand, Self::Err>> {
+        let out = self
+            .draw_pass
+            .as_ref()
+            .map(|draw_pass| draw_pass.call::<Table>(()))?;
+
+        Some(out.and_then(|tab| -> Result<DrawCommand, Self::Err> {
+            Ok(DrawCommand {
+                x :     tab.get("x")?,
+                y :     tab.get("y")?,
+                glyph : tab.get("glyph")?,
+            })
+        }))
+    }
+}
+
+pub struct DrawCommand {
+    pub x :     i32,
+    pub y :     i32,
+    pub glyph : char,
 }
 
 impl Plugin {
@@ -184,11 +225,6 @@ impl Plugin {
         }
 
         lua.load(buf).eval::<Table>().map_err(From::from)
-    }
-
-    /// Wrapper around the `init` lua function
-    pub fn call_init(&self) -> Option<Result<(), mlua::Error>> {
-        self.api.init()
     }
 }
 

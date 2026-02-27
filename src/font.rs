@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::path::Path;
 
-use image::{EncodableLayout, GenericImage, GenericImageView, ImageError, Rgba};
+use image::{EncodableLayout, GenericImage, GenericImageView, ImageError};
 use sdl3::pixels::PixelFormat;
 use sdl3::rect::Rect;
 use sdl3::render::{
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::char::Char437;
-use crate::color::Color;
+use crate::color::{Color, Palette};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LookupTable {
@@ -43,17 +43,19 @@ impl Font {
     pub fn new<T>(
         texture_creator : &TextureCreator<T>,
         path : impl AsRef<Path>,
-        bg : impl Into<Option<Color>>,
+        palette : impl Into<Palette>,
     ) -> Result<Self, FontCreationError> {
         let mut im = image::open(path)?;
 
         let (w, h) = im.dimensions();
 
-        if let Some(bg) = bg.into() {
-            for (x, y, p) in im.clone().pixels() {
-                if p == bg.into() {
-                    im.put_pixel(x, y, Rgba::from([0, 0, 0, 255]));
-                }
+        let palette = palette.into();
+
+        for (x, y, p) in im.clone().pixels() {
+            match p {
+                fg if Color::from(fg) == palette.fg => im.put_pixel(x, y, Color::new(255, 255, 255).into()),
+                bg if Color::from(bg) == palette.bg => im.put_pixel(x, y, Color::new(0, 0, 0).into()),
+                _ => return Err(FontCreationError::BadPalette),
             }
         }
 
@@ -179,4 +181,7 @@ pub enum FontCreationError {
 
     #[error("Badly sized font atlas")]
     BadlySized,
+
+    #[error("Palette provided does not match the image loaded")]
+    BadPalette,
 }

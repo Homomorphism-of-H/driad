@@ -1,22 +1,31 @@
 use std::error::Error;
 use std::time::Duration;
 
+use driad::color::{Color, Palette};
+use driad::plugin::PluginApi;
 use driad::{Driad, WindowProperties};
+use log::{LevelFilter, warn};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-use sdl3::pixels::Color;
+use simplelog::Config;
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
+    simplelog::SimpleLogger::init(LevelFilter::Debug, Config::default())?;
     let mut driad = Driad::new(
         WindowProperties::default(),
         "assets/Alloy_curses_12x12.png",
+        Palette {
+            fg : Color::new(255, 255, 255),
+            bg : Color::new(255, 0, 255),
+            ..Default::default()
+        },
         vec!["plugins/test", "plugins/other"],
     )?;
 
     driad.init_plugins()?;
 
-    driad.canvas.set_draw_color(Color::RGB(0, 255, 255));
+    driad.canvas.set_draw_color(Color::new(0, 255, 255));
     driad.canvas.clear();
     driad.canvas.present();
 
@@ -24,10 +33,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut pos_y = 12;
 
     'running: loop {
-        driad.canvas.set_draw_color(Color::RGB(0, 0, 0));
+        driad.canvas.set_draw_color(Color::new(0, 0, 0));
         driad.canvas.clear();
 
-        driad.font.put_str(&mut driad.canvas, "Hello World!", (2, 2))?;
+        driad
+            .font
+            .put_str(&mut driad.canvas, "Hello World!", (2, 2))?;
 
         driad.font.put(&mut driad.canvas, '@', (pos_x, pos_y))?;
 
@@ -65,6 +76,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } => break 'running,
                 _ => {},
             }
+        }
+
+        for plugin in &driad.plugins {
+            plugin.draw_pass().inspect(|a| {
+                match a {
+                    Ok(draw) => match driad.font.put(&mut driad.canvas, draw.glyph, (draw.x, draw.y)) {
+                        Ok(()) => (),
+                        Err(err) => warn!("{err}"),
+                    },
+                    Err(err) => warn!("{err}"),
+                }
+            });
         }
 
         driad.canvas.present();
