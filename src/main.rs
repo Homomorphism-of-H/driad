@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::time::Duration;
 
+use ::std::thread::sleep;
 use driad_core::color::{Color, Palette};
 use driad_core::font::Font;
 use driad_core::plugin::PluginApi;
@@ -33,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut driad = Driad::new(
         WindowProperties::default(),
         font,
-        Vec::<String>::new(), 
+        Vec::<String>::new(),
         // vec!["plugins/test", "plugins/other"],
     )?;
 
@@ -50,11 +51,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         driad.canvas.set_draw_color(Color::new(0, 0, 0));
         driad.canvas.clear();
 
-        driad
-            .font
-            .put_str(&mut driad.canvas, "Hello World!", (2, 2))?;
+        driad.font.put_str(
+            &mut driad.canvas,
+            "Hello World!",
+            (2, 2),
+            Color::new(255, 255, 255),
+        )?;
 
-        driad.font.put(
+        driad.font.put_char(
             &mut driad.canvas,
             '@',
             (pos_x, pos_y),
@@ -101,10 +105,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             plugin.draw_pass().inspect(|a| {
                 match a {
                     Ok(draw) => {
-                        match driad
-                            .font
-                            .put_char(&mut driad.canvas, draw.glyph, (draw.x, draw.y))
-                        {
+                        match driad.font.put_char(
+                            &mut driad.canvas,
+                            draw.glyph,
+                            (draw.x, draw.y),
+                            Color::new(255, 255, 255),
+                        ) {
                             Ok(()) => (),
                             Err(err) => warn!("{err}"),
                         }
@@ -115,7 +121,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         driad.canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
     Ok(())
