@@ -32,9 +32,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     let mut driad = Driad::new(
-        WindowProperties::default(),
+        &WindowProperties::default(),
         font,
-        Vec::<String>::new(),
+        &Vec::<String>::new(),
         // vec!["plugins/test", "plugins/other"],
     )?;
 

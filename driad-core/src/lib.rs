@@ -56,10 +56,15 @@ impl Default for WindowProperties {
 
 impl Driad {
     /// Creates a new `Driad` object
+    ///
+    /// # Errors
+    ///
+    /// Primarily if there is an issue with [sdl](sdl3), see [`DriadNewError`]
+    /// for more information on possible errors.
     pub fn new<T : AsRef<Path>>(
-        window_properties : WindowProperties,
+        window_properties : &WindowProperties,
         font : Font,
-        plugin_paths : Vec<T>,
+        plugin_paths : &[T],
     ) -> Result<Self, DriadNewError> {
         trace!("Initializing SDL 3");
         let sdl = sdl3::init()?;
@@ -119,36 +124,49 @@ impl Driad {
     }
 
     #[inline]
-    /// Attaches a plugin to the Driad runtime without calling initializer
+    /// Attaches a plugin to the Driad runtime without calling the initializer
     /// function yet.
+    ///
+    /// # Errors
+    ///
+    /// See [`Plugin::load_from_path`].
     pub fn load_plugin(&mut self, path : impl AsRef<Path>) -> Result<bool, LoadPluginError> {
-        if !self.plugins_initialized {
-            self.plugins.push(Plugin::load_from_path(path, &self.lua)?);
-            Ok(true)
-        } else {
+        if self.plugins_initialized {
             warn!("Attempted to load a plugin after initialization");
             Ok(false)
+        } else {
+            self.plugins.push(Plugin::load_from_path(path, &self.lua)?);
+            Ok(true)
         }
     }
 
+    /// Initialize all of the plugins. The boolean this returns indicates if
+    /// this funciton did anything.
+    ///
+    /// # Errors
+    ///
+    /// This function calls lua functions, if those were to error or be invalid,
+    /// this will error.
     pub fn init_plugins(&mut self) -> Result<bool, mlua::Error> {
-        if !self.plugins_initialized {
+        if self.plugins_initialized {
+            Ok(false)
+        } else {
             for plugin in &self.plugins {
                 trace!("Loading plugin: {}", plugin.metadata.name);
                 if let Some(res) = plugin.init() {
-                    res?
+                    res?;
                 }
             }
 
             self.plugins_initialized = true;
 
             Ok(true)
-        } else {
-            Ok(false)
         }
     }
 
-    pub fn sdl(&self) -> &Sdl {
+    #[must_use]
+    #[inline]
+    pub const fn sdl(&self) -> &Sdl {
         &self.sdl
     }
 }
