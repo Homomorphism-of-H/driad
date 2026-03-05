@@ -2,6 +2,7 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 use image::{Rgb, Rgba};
+use sdl3::pixels;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -13,7 +14,9 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn new(r : u8, g : u8, b : u8) -> Self {
+    #[must_use]
+    #[inline]
+    pub const fn new(r : u8, g : u8, b : u8) -> Self {
         Self { r, g, b }
     }
 }
@@ -33,7 +36,7 @@ impl Palette {
     #[inline]
     #[must_use]
     pub fn bg_accent2(&self) -> Color {
-        self.bg_accent2.unwrap_or(self.bg_accent1())
+        self.bg_accent2.unwrap_or_else(|| self.bg_accent1())
     }
 
     #[inline]
@@ -45,7 +48,7 @@ impl Palette {
     #[inline]
     #[must_use]
     pub fn fg_accent2(&self) -> Color {
-        self.fg_accent2.unwrap_or(self.fg_accent1())
+        self.fg_accent2.unwrap_or_else(|| self.fg_accent1())
     }
 
     #[inline]
@@ -78,7 +81,8 @@ impl Default for Palette {
 }
 
 impl Palette {
-    pub fn simple(fg : Color, bg : Color) -> Self {
+    #[must_use]
+    pub const fn simple(fg : Color, bg : Color) -> Self {
         Self {
             fg,
             bg,
@@ -92,7 +96,7 @@ impl Palette {
 
 impl From<Color> for Palette {
     fn from(value : Color) -> Self {
-        Palette {
+        Self {
             fg : value,
             ..Default::default()
         }
@@ -161,8 +165,8 @@ impl<C : Into<u8>> From<[C; 3]> for Color {
     }
 }
 
-impl From<sdl3::pixels::Color> for Color {
-    fn from(value : sdl3::pixels::Color) -> Self {
+impl From<pixels::Color> for Color {
+    fn from(value : pixels::Color) -> Self {
         Self {
             r : value.r,
             g : value.g,
@@ -203,7 +207,7 @@ impl From<Color> for [u8; 3] {
     }
 }
 
-impl From<Color> for sdl3::pixels::Color {
+impl From<Color> for pixels::Color {
     fn from(value : Color) -> Self {
         Self {
             r : value.r,
