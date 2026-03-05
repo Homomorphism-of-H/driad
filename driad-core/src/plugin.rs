@@ -7,6 +7,7 @@ use std::path::Path;
 use mlua::{Function, Lua, Table};
 use serde::Deserialize;
 use thiserror::Error;
+use toml::de;
 
 use self::version::Version;
 
@@ -28,7 +29,7 @@ pub mod version {
 
     struct VersionVisitor;
 
-    impl<'de> Visitor<'de> for VersionVisitor {
+    impl Visitor<'_> for VersionVisitor {
         type Value = Version;
 
         fn expecting(&self, f : &mut fmt::Formatter) -> fmt::Result {
@@ -65,9 +66,18 @@ pub mod version {
             let mut splits = splits.iter();
 
             Ok(Self {
-                major : splits.next().unwrap().parse()?,
-                minor : splits.next().unwrap().parse()?,
-                patch : splits.next().unwrap().parse()?,
+                major : splits
+                    .next()
+                    .expect("Somehow, a list with 3 elements doesn't have a first element")
+                    .parse()?,
+                minor : splits
+                    .next()
+                    .expect("Somehow, a list with 3 elements doesn't have a second element")
+                    .parse()?,
+                patch : splits
+                    .next()
+                    .expect("Somehow, a list with 3 elements doesn't have a third element")
+                    .parse()?,
             })
         }
     }
@@ -128,7 +138,8 @@ pub struct LuaPluginApi {
 }
 
 impl LuaPluginApi {
-    pub fn new(table : Table) -> Self {
+    #[must_use]
+    pub fn new(table : &Table) -> Self {
         Self {
             init :      table.get("init").ok(),
             draw_pass : table.get("draw_pass").ok(),
@@ -167,23 +178,34 @@ pub struct DrawCommand {
 
 impl Plugin {
     #[must_use]
-    #[inline(always)]
-    pub fn new_from_parts(metadata : Metadata, functions : Table) -> Self {
+    #[inline]
+    pub fn new_from_parts(metadata : Metadata, functions : &Table) -> Self {
         Self {
             metadata,
             api : LuaPluginApi::new(functions),
         }
     }
 
+    /// Creates a plugin from a path.
+    ///
+    /// # Errors
+    ///
+    /// See [`Self::fetch_metadata`] and [`Self::load_lua_functions`]
     pub fn load_from_path(path : impl AsRef<Path>, lua : &Lua) -> Result<Self, LoadPluginError> {
         let metadata = Self::fetch_metadata(&path)?;
         let functions = Self::load_lua_functions(lua, &path)?;
         Ok(Self {
             metadata,
-            api : LuaPluginApi::new(functions),
+            api : LuaPluginApi::new(&functions),
         })
     }
 
+    /// Fetches the metadata for a plugin. Standard practice should be to name
+    /// the file metadata.toml.
+    ///
+    /// # Errors
+    ///
+    /// If the file cannot be found in the given directory.
     pub fn fetch_metadata(path : impl AsRef<Path>) -> Result<Metadata, FetchMetadataError> {
         let dir_reader = Path::read_dir(path.as_ref())?;
 
@@ -209,9 +231,15 @@ impl Plugin {
     }
 
     /// Warning, this function can execute arbitrary lua code, be warned.
+    ///
+    /// # Errors
+    ///
+    /// If the given directory doesn't have a main.lua file, or if that file
+    /// doesn't properly produce plugin information in the form of a [`Table`].
     pub fn load_lua_functions(lua : &Lua, path : impl AsRef<Path>) -> Result<Table, FetchLuaError> {
         let dir_reader = Path::read_dir(path.as_ref())?;
 
+        // find main.lua in the given directory
         let functions = dir_reader
             .flatten()
             .find(|entry| entry.file_name().eq_ignore_ascii_case("main.lua"))
@@ -255,7 +283,7 @@ pub enum FetchMetadataError {
     MetadataNotFound,
 
     #[error(transparent)]
-    TomlParseError(#[from] toml::de::Error),
+    TomlParseError(#[from] de::Error),
 
     #[error(transparent)]
     IoError(#[from] io::Error),

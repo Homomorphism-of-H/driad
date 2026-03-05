@@ -20,3 +20,6 @@ toml.workspace = true
 image.workspace = true
 
 log.workspace = true
+
+[lints]
+workspace = true
