@@ -31,16 +31,17 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            fg :         Color {
+            fg : Color {
                 r : 255,
                 g : 255,
                 b : 255,
             },
-            bg :         Color {
+            bg : Color {
                 r : 0,
                 g : 0,
                 b : 0,
             },
+
             fg_accent1 : None,
             fg_accent2 : None,
             bg_accent1 : None,
@@ -62,6 +63,15 @@ impl Palette {
     }
 }
 
+impl From<Color> for Palette {
+    fn from(value : Color) -> Self {
+        Palette {
+            fg : value,
+            ..Default::default()
+        }
+    }
+}
+
 impl fmt::Display for Color {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "(r: {}, g: {}, b: {})", self.r, self.g, self.b)
@@ -73,9 +83,9 @@ impl Add for Color {
 
     fn add(self, rhs : Self) -> Self::Output {
         Self {
-            r : self.r + rhs.r,
-            g : self.g + rhs.g,
-            b : self.b + rhs.b,
+            r : self.r.saturating_add(rhs.r),
+            g : self.r.saturating_add(rhs.g),
+            b : self.r.saturating_add(rhs.b),
         }
     }
 }
@@ -154,9 +164,9 @@ impl From<Rgba<u8>> for Color {
     }
 }
 
-impl From<Color> for (u8, u8, u8) {
+impl<R : From<u8>, G : From<u8>, B : From<u8>> From<Color> for (R, G, B) {
     fn from(value : Color) -> Self {
-        (value.r, value.g, value.b)
+        (value.r.into(), value.g.into(), value.b.into())
     }
 }
 

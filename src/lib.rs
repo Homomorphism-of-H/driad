@@ -7,7 +7,6 @@ use sdl3::video::{Window, WindowBuildError};
 use sdl3::{EventPump, IntegerOrSdlError, Sdl, VideoSubsystem};
 use thiserror::Error;
 
-use crate::color::Palette;
 use crate::font::{Font, FontCreationError};
 use crate::plugin::{LoadPluginError, Plugin, PluginApi};
 
@@ -56,8 +55,7 @@ impl Default for WindowProperties {
 impl Driad {
     pub fn new<T : AsRef<Path>>(
         window_properties : WindowProperties,
-        font_path : impl AsRef<Path>,
-        font_palette: impl Into<Palette>,
+        font : Font,
         plugin_paths : Vec<T>,
     ) -> Result<Self, DriadNewError> {
         let sdl = sdl3::init()?;
@@ -78,10 +76,6 @@ impl Driad {
         let mut window = window.build()?;
 
         let canvas = window.clone().into_canvas();
-
-        let texture_creator = canvas.texture_creator();
-        // Hardcoded until Color is better integrated into fonts
-        let font = Font::new(&texture_creator, font_path, font_palette)?;
 
         window.set_size(
             window_properties.width * font.glyph_width,
@@ -154,7 +148,7 @@ impl Driad {
 #[derive(Debug, Error)]
 pub enum DriadNewError {
     #[error(transparent)]
-    SDL3Error(#[from] sdl3::Error),
+    SdlError(#[from] sdl3::Error),
     #[error(transparent)]
     WindowBuildError(#[from] WindowBuildError),
     #[error(transparent)]

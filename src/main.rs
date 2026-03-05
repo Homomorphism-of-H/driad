@@ -2,6 +2,7 @@ use std::error::Error;
 use std::time::Duration;
 
 use driad::color::{Color, Palette};
+use driad::font::Font;
 use driad::plugin::PluginApi;
 use driad::{Driad, WindowProperties};
 use log::{LevelFilter, warn};
@@ -11,16 +12,29 @@ use simplelog::Config;
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
-    simplelog::SimpleLogger::init(LevelFilter::Debug, Config::default())?;
+    simplelog::SimpleLogger::init(LevelFilter::Trace, Config::default())?;
+
+    let font = Font::new(
+        "assets/Alloy_curses_12x12.png",
+        Palette::simple(
+            Color {
+                r : 255,
+                g : 255,
+                b : 255,
+            },
+            Color {
+                r : 255,
+                g : 0,
+                b : 255,
+            },
+        ),
+    )?;
+
     let mut driad = Driad::new(
         WindowProperties::default(),
-        "assets/Alloy_curses_12x12.png",
-        Palette {
-            fg : Color::new(255, 255, 255),
-            bg : Color::new(255, 0, 255),
-            ..Default::default()
-        },
-        vec!["plugins/test", "plugins/other"],
+        font,
+        Vec::<String>::new(), 
+        // vec!["plugins/test", "plugins/other"],
     )?;
 
     driad.init_plugins()?;
@@ -40,7 +54,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             .font
             .put_str(&mut driad.canvas, "Hello World!", (2, 2))?;
 
-        driad.font.put(&mut driad.canvas, '@', (pos_x, pos_y))?;
+        driad.font.put(
+            &mut driad.canvas,
+            '@',
+            (pos_x, pos_y),
+            Color::new(255, 255, 0),
+        )?;
 
         for event in driad.event_pump.poll_iter() {
             match event {
@@ -81,9 +100,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         for plugin in &driad.plugins {
             plugin.draw_pass().inspect(|a| {
                 match a {
-                    Ok(draw) => match driad.font.put(&mut driad.canvas, draw.glyph, (draw.x, draw.y)) {
-                        Ok(()) => (),
-                        Err(err) => warn!("{err}"),
+                    Ok(draw) => {
+                        match driad
+                            .font
+                            .put_char(&mut driad.canvas, draw.glyph, (draw.x, draw.y))
+                        {
+                            Ok(()) => (),
+                            Err(err) => warn!("{err}"),
+                        }
                     },
                     Err(err) => warn!("{err}"),
                 }
