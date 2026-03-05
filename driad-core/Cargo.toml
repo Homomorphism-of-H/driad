@@ -1,0 +1,22 @@
+[package]
+name = "driad-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Rendering
+sdl3.workspace = true
+
+# Errors
+thiserror.workspace = true
+
+# Embedded Lua
+mlua.workspace = true
+
+# Serialization
+serde.workspace = true
+toml.workspace = true
+image.workspace = true
+
+log.workspace = true

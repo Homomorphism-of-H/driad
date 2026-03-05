@@ -263,12 +263,21 @@ dependencies = [
 name = "driad"
 version = "0.1.0"
 dependencies = [
+ "driad-core",
+ "log",
+ "sdl3",
+ "simplelog",
+]
+
+[[package]]
+name = "driad-core"
+version = "0.1.0"
+dependencies = [
  "image",
  "log",
  "mlua",
  "sdl3",
  "serde",
- "simplelog",
  "thiserror",
  "toml",
 ]

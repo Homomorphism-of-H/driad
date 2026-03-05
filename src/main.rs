@@ -1,18 +1,18 @@
 use std::error::Error;
 use std::time::Duration;
 
-use driad::color::{Color, Palette};
-use driad::font::Font;
-use driad::plugin::PluginApi;
-use driad::{Driad, WindowProperties};
+use driad_core::color::{Color, Palette};
+use driad_core::font::Font;
+use driad_core::plugin::PluginApi;
+use driad_core::{Driad, WindowProperties};
 use log::{LevelFilter, warn};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-use simplelog::Config;
+use simplelog::{Config, SimpleLogger};
 
 /// Main Entrypoint to the program.
 fn main() -> Result<(), Box<dyn Error>> {
-    simplelog::SimpleLogger::init(LevelFilter::Trace, Config::default())?;
+    SimpleLogger::init(LevelFilter::Trace, Config::default())?;
 
     let font = Font::new(
         "assets/Alloy_curses_12x12.png",

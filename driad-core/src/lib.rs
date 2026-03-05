@@ -181,6 +181,7 @@ pub mod draw {
     #[derive(Debug, Default)]
     pub enum DrawCommand {
         PutChr {
+            pos : (i32, i32),
             chr : Char437,
             col : Color,
         },
@@ -188,11 +189,13 @@ pub mod draw {
         None,
     }
 
-    pub struct DrawPass(Vec<DrawCommand>);
+    pub struct DrawPass {
+        commands : Vec<DrawCommand>,
+    }
 
     impl DerefMut for DrawPass {
         fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
+            &mut self.commands
         }
     }
 
@@ -200,7 +203,7 @@ pub mod draw {
         type Target = Vec<DrawCommand>;
 
         fn deref(&self) -> &Self::Target {
-            &self.0
+            &self.commands
         }
     }
 }

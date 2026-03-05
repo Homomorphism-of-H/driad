@@ -1,10 +1,26 @@
-[package]
-name = "driad"
-version = "0.1.0"
+[workspace]
+members = ["driad-core"]
+resolver = "2"
+
+[workspace.package]
 authors = ["Fae"]
 edition = "2024"
+version = "0.1.0"
+
+[package]
+name = "driad"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
+sdl3.workspace = true
+log.workspace = true
+simplelog.workspace = true
+
+driad-core = { path = "./driad-core" }
+
+[workspace.dependencies]
 # Rendering
 sdl3 = { version = "0.17.3", features = ["unsafe_textures"] }
 
