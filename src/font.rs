@@ -128,10 +128,21 @@ impl Font {
         key : char,
         pos : impl Into<(i32, i32)>,
     ) -> Result<(), PutGlyphError> {
-        let sub_image = self.lookup_char(
+        self.put_char437(
+            canvas,
             key.try_into()
                 .map_err(|_| PutGlyphError::IntoChar437Error)?,
-        );
+            pos,
+        )
+    }
+
+    pub fn put_char437<T : RenderTarget>(
+        &self,
+        canvas : &mut Canvas<T>,
+        key : Char437,
+        pos : impl Into<(i32, i32)>,
+    ) -> Result<(), PutGlyphError> {
+        let sub_image = self.lookup_char(key);
 
         let mut texture = canvas.create_texture_static(
             PixelFormat::RGB24,

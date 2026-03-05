@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use log::error;
+use log::{error, trace, warn};
 use mlua::Lua;
 use sdl3::render::Canvas;
 use sdl3::video::{Window, WindowBuildError};
@@ -17,6 +17,7 @@ pub mod plugin;
 pub mod widget;
 
 pub struct Driad {
+    /// The Sdl Library
     pub sdl :    Sdl,
     pub video :  VideoSubsystem,
     pub window : Window,
@@ -26,11 +27,12 @@ pub struct Driad {
     pub event_pump : EventPump,
 
     pub plugins_initialized : bool,
+    /// The Lua runtime
     pub lua :                 Lua,
     pub plugins :             Vec<Plugin>,
 }
 
-// Todo, rework this to be a window Builder
+// TODO, rework this to be a window builder
 #[derive(Debug)]
 pub struct WindowProperties {
     pub width :      u32,
@@ -53,11 +55,13 @@ impl Default for WindowProperties {
 }
 
 impl Driad {
+    /// Creates a new `Driad` object
     pub fn new<T : AsRef<Path>>(
         window_properties : WindowProperties,
         font : Font,
         plugin_paths : Vec<T>,
     ) -> Result<Self, DriadNewError> {
+        trace!("Initializing SDL 3");
         let sdl = sdl3::init()?;
 
         let video = sdl.video()?;
@@ -99,6 +103,8 @@ impl Driad {
             })
             .collect();
 
+        trace!("Initialized Driad");
+
         Ok(Self {
             sdl,
             video,
@@ -114,12 +120,13 @@ impl Driad {
 
     #[inline]
     /// Attaches a plugin to the Driad runtime without calling initializer
-    /// functions yet.
+    /// function yet.
     pub fn load_plugin(&mut self, path : impl AsRef<Path>) -> Result<bool, LoadPluginError> {
         if !self.plugins_initialized {
             self.plugins.push(Plugin::load_from_path(path, &self.lua)?);
             Ok(true)
         } else {
+            warn!("Attempted to load a plugin after initialization");
             Ok(false)
         }
     }
@@ -127,6 +134,7 @@ impl Driad {
     pub fn init_plugins(&mut self) -> Result<bool, mlua::Error> {
         if !self.plugins_initialized {
             for plugin in &self.plugins {
+                trace!("Loading plugin: {}", plugin.metadata.name);
                 if let Some(res) = plugin.init() {
                     res?
                 }
@@ -149,12 +157,50 @@ impl Driad {
 pub enum DriadNewError {
     #[error(transparent)]
     SdlError(#[from] sdl3::Error),
+
     #[error(transparent)]
     WindowBuildError(#[from] WindowBuildError),
+
     #[error(transparent)]
     IntegerOrSdlError(#[from] IntegerOrSdlError),
+
     #[error(transparent)]
     FontCreationError(#[from] FontCreationError),
+
     #[error(transparent)]
     LoadPluginError(#[from] LoadPluginError),
+}
+
+// TODO
+pub mod draw {
+    use std::ops::{Deref, DerefMut};
+
+    use crate::char::Char437;
+    use crate::color::Color;
+
+    #[derive(Debug, Default)]
+    pub enum DrawCommand {
+        PutChr {
+            chr : Char437,
+            col : Color,
+        },
+        #[default]
+        None,
+    }
+
+    pub struct DrawPass(Vec<DrawCommand>);
+
+    impl DerefMut for DrawPass {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
+
+    impl Deref for DrawPass {
+        type Target = Vec<DrawCommand>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
 }

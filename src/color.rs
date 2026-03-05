@@ -5,6 +5,7 @@ use image::{Rgb, Rgba};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+/// A RGB color.
 pub struct Color {
     pub r : u8,
     pub g : u8,
@@ -26,6 +27,32 @@ pub struct Palette {
     pub bg :         Color,
     pub bg_accent1 : Option<Color>,
     pub bg_accent2 : Option<Color>,
+}
+
+impl Palette {
+    #[inline]
+    #[must_use]
+    pub fn bg_accent2(&self) -> Color {
+        self.bg_accent2.unwrap_or(self.bg_accent1())
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn bg_accent1(&self) -> Color {
+        self.bg_accent1.unwrap_or(self.bg)
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn fg_accent2(&self) -> Color {
+        self.fg_accent2.unwrap_or(self.fg_accent1())
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn fg_accent1(&self) -> Color {
+        self.fg_accent1.unwrap_or(self.fg)
+    }
 }
 
 impl Default for Palette {
@@ -101,9 +128,9 @@ impl Sub for Color {
 
     fn sub(self, rhs : Self) -> Self::Output {
         Self {
-            r : self.r - rhs.r,
-            g : self.g - rhs.g,
-            b : self.b - rhs.b,
+            r : self.r.saturating_sub(rhs.r),
+            g : self.r.saturating_sub(rhs.g),
+            b : self.r.saturating_sub(rhs.b),
         }
     }
 }
