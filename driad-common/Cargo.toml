@@ -1,0 +1,13 @@
+[package]
+name = "driad-common"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+serde.workspace = true
+uuid.workspace = true
+rmp-serde.workspace = true
+
+[lints]
+workspace = true

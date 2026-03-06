@@ -1,0 +1,13 @@
+[package]
+name = "driad-server"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+hecs.workspace = true
+tokio.workspace = true
+driad-common = { path = "../driad-common" }
+
+[lints]
+workspace = true
