@@ -66,38 +66,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         )?;
 
         for event in driad.event_pump.poll_iter() {
-            match event {
-                Event::KeyDown {
-                    keycode: Some(Keycode::Up),
-                    ..
-                } => {
-                    pos_y -= 1;
-                },
-                Event::KeyDown {
-                    keycode: Some(Keycode::Down),
-                    ..
-                } => {
-                    pos_y += 1;
-                },
-                Event::KeyDown {
-                    keycode: Some(Keycode::Right),
-                    ..
-                } => {
-                    pos_x += 1;
-                },
-                Event::KeyDown {
-                    keycode: Some(Keycode::Left),
-                    ..
-                } => {
-                    pos_x -= 1;
-                },
-
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                _ => {},
+            if let Event::KeyDown {
+                keycode: Some(key), ..
+            } = event
+            {
+                match key {
+                    Keycode::Escape => break 'running,
+                    Keycode::Up => pos_y -= 1,
+                    Keycode::Down => pos_y += 1,
+                    Keycode::Right => pos_x += 1,
+                    Keycode::Left => pos_x -= 1,
+                    _ => (),
+                }
             }
         }
 
